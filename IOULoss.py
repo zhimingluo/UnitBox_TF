@@ -36,6 +36,6 @@ def IOULoss(input, label):
     def background():
         return 0
 
-    L = tf.cond(tf.equal(tf.reduce_sum(label, 0)), background(), foreground())
+    L = tf.cond(tf.equal(gt, 0), background(), foreground())
 
     return tf.reduce_sum(L)
