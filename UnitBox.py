@@ -69,11 +69,13 @@ def _to_tensor(x, dtype):
     return x
 
 
-def loss_function(sc_pred, sc_true):
+def loss_function(sc_pred, sc_true, bbox_pred, bbox_true):
 
-    loss = tf.reduce_mean(
+    score_loss = tf.reduce_mean(
         tf.nn.sigmoid_cross_entropy_with_logits(logits=sc_pred,
                                                 labels=sc_true))
+
+    bbox_loss = IOULoss(bbox_pred, bbox_true)
 
     l2 = 0.
 
@@ -83,13 +85,14 @@ def loss_function(sc_pred, sc_true):
     for w in tl.layers.get_variables_with_name('W_deconv2d', train_only=True, printable=False):
         l2 += tf.contrib.layers.l2_regularizer(0.00005)(w)
 
-    return loss + l2
+    return score_loss + bbox_loss + l2
 
 
 if __name__ == "__main__":
 
     x = tf.placeholder(tf.float32, [None, None, None, 3])
     sc_ = tf.placeholder(tf.float32, shape=[None, None, None, 1], name='sc_')
+    bbox_ = tf.placeholder(tf.float32, shape=[None, None, None, 4], name='bbox_')
 
     net_in = tl.layers.InputLayer(x, name='input_layer')
 

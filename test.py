@@ -1,13 +1,13 @@
 import tensorflow as tf
 import tensorlayer as tl
-from UnitBox import Model, loss_function
+from UnitBox import Model
 import numpy as np
 import cv2
 
 
 if __name__ == "__main__":
 
-    im = cv2.imread("22_Picnic_Picnic_22_2.jpg")
+    im = cv2.imread("test_im/img_417.jpg")
 
     x = tf.placeholder(tf.float32, [None, None, None, 3])
     sc_ = tf.placeholder(tf.float32, shape=[None, None, None, 1], name='sc_')
@@ -26,7 +26,6 @@ if __name__ == "__main__":
     im = np.expand_dims(im, axis=0)
 
     score = sess.run(model['prob'], feed_dict={x: im})
-    print(score.shape)
 
     cv2.imshow("img", np.squeeze(im))
     cv2.imshow("prob", np.squeeze(score))
