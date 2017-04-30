@@ -11,10 +11,10 @@ def IOULoss(input, label):
     :return: the IoU loss
     """
     # the estimate position
-    xt, xb, xl, xr = tf.split(input, num_or_size_splits=4, axis=-1)
+    xt, xb, xl, xr = tf.split(input, num_or_size_splits=4, axis=3)
 
     # the ground truth position
-    gt, gb, gl, gr = tf.split(label, num_or_size_splits=4, axis=-1)
+    gt, gb, gl, gr = tf.split(label, num_or_size_splits=4, axis=3)
 
     # compute the bounding box size
     X = (xt + xb) + (xl + xr)
@@ -30,6 +30,6 @@ def IOULoss(input, label):
     IoU = tf.divide(I, U)
     L = -tf.log(IoU + _EPSILON)
 
-    L = tf.select(tf.equal(gt, 0), 0, L)
+    L = tf.where(tf.equal(gt, tf.constant(0.01, dtype=tf.float32)), tf.zeros_like(L, tf.float32), L)
 
     return tf.reduce_sum(L)
