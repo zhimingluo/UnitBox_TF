@@ -16,20 +16,20 @@ def IOULoss(input, label):
     # the ground truth position
     gt, gb, gl, gr = tf.split(label, num_or_size_splits=4, axis=-1)
 
+    # compute the bounding box size
+    X = (xt + xb) + (xl + xr)
+    G = (gt + gb) + (gl + gr)
 
-    with tf.control_dependencies([gt]):
-        # compute the bounding box size
-        X = (xt + xb) + (xl + xr)
-        G = (gt + gb) + (gl + gr)
+    # compute the IOU
+    Ih = tf.minimum(xt, gt) + tf.minimum(xb, gb)
+    Iw = tf.minimum(xl, gl) + tf.minimum(xr, gr)
 
-        # compute the IOU
-        Ih = tf.minimum(xt, gt) + tf.minimum(xb, gb)
-        Iw = tf.minimum(xl, gl) + tf.minimum(xr, gr)
+    I = tf.multiply(Ih, Iw, name="intersection")
+    U = X + G - I + _EPSILON
 
-        I = tf.multiply(Ih, Iw, name="intersection")
-        U = X + G - I + _EPSILON
+    IoU = tf.divide(I, U)
+    L = -tf.log(IoU + _EPSILON)
 
-        IoU = tf.divide(I, U)
-        L = -tf.log(IoU + _EPSILON)
+    L = tf.select(tf.equal(gt, 0), 0, L)
 
-        return tf.reduce_sum(L)
+    return tf.reduce_sum(L)
