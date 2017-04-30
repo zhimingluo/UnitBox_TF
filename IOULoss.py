@@ -28,8 +28,7 @@ def IOULoss(input, label):
     U = X + G - I + _EPSILON
 
     IoU = tf.divide(I, U)
-    L = -tf.log(IoU + _EPSILON)
 
-    L = tf.where(tf.equal(gt, tf.constant(0.01, dtype=tf.float32)), tf.zeros_like(L, tf.float32), L)
+    L = tf.where(tf.less_equal(gt, tf.constant(0.01, dtype=tf.float32)), tf.zeros_like(xt, tf.float32), -tf.log(IoU))
 
     return tf.reduce_sum(L)
