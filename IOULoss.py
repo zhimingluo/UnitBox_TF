@@ -17,7 +17,7 @@ def IOULoss(input, label):
     gt, gb, gl, gr = tf.split(label, num_or_size_splits=4, axis=-1)
 
 
-    def foreground():
+    with tf.control_dependencies([gt]):
         # compute the bounding box size
         X = (xt + xb) + (xl + xr)
         G = (gt + gb) + (gl + gr)
@@ -31,11 +31,5 @@ def IOULoss(input, label):
 
         IoU = tf.divide(I, U)
         L = -tf.log(IoU + _EPSILON)
-        return L
 
-    def background():
-        return 0
-
-    L = tf.cond(tf.equal(gt, 0), background(), foreground())
-
-    return tf.reduce_sum(L)
+        return tf.reduce_sum(L)
