@@ -17,8 +17,8 @@ def IOULoss(input, label):
     gt, gb, gl, gr = tf.split(label, num_or_size_splits=4, axis=3)
 
     # compute the bounding box size
-    X = (xt + xb) + (xl + xr)
-    G = (gt + gb) + (gl + gr)
+    X = (xt + xb) * (xl + xr)
+    G = (gt + gb) * (gl + gr)
 
     # compute the IOU
     Ih = tf.minimum(xt, gt) + tf.minimum(xb, gb)
@@ -29,6 +29,8 @@ def IOULoss(input, label):
 
     IoU = tf.divide(I, U)
 
-    L = tf.where(tf.less_equal(gt, tf.constant(0.01, dtype=tf.float32)), tf.zeros_like(xt, tf.float32), -tf.log(IoU))
+    L = tf.where(tf.less_equal(gt, tf.constant(0.01, dtype=tf.float32)),
+                 tf.zeros_like(xt, tf.float32),
+                 -tf.log(IoU + _EPSILON))
 
     return tf.reduce_sum(L)

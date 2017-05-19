@@ -1,7 +1,6 @@
 import tensorflow as tf
 import tensorlayer as tl
 from VGG16 import vgg_16, vgg16_init_weights
-from scipy.misc import imread, imresize
 import numpy as np
 import cv2
 from IOULoss import IOULoss
@@ -57,9 +56,9 @@ def Model(net_in):
                                    name='bbox')
 
     model = {}
-    model['score'] = score
-    model['prob'] = prob
-    model['bbox'] = bbox
+    model['score'] = score.outputs
+    model['prob'] = prob.outputs
+    model['bbox'] = bbox.outputs
 
     return model
 
@@ -80,10 +79,10 @@ def loss_function(sc_pred, sc_true, bbox_pred, bbox_true):
     l2 = 0.
 
     for w in tl.layers.get_variables_with_name('W_conv2d', train_only=True, printable=False):
-        l2 += tf.contrib.layers.l2_regularizer(0.00005)(w)
+        l2 += tf.contrib.layers.l2_regularizer(0.0005)(w)
 
     for w in tl.layers.get_variables_with_name('W_deconv2d', train_only=True, printable=False):
-        l2 += tf.contrib.layers.l2_regularizer(0.00005)(w)
+        l2 += tf.contrib.layers.l2_regularizer(0.0005)(w)
 
     return score_loss + bbox_loss + l2
 
@@ -101,7 +100,7 @@ if __name__ == "__main__":
     sess = tf.InteractiveSession()
     tl.layers.print_all_variables()
 
-    loss = loss_function(model['score'].outputs, sc_)
+    loss = loss_function(model['score'], sc_, model['bbox'], bbox_)
 
     #train_op = tf.train.MomentumOptimizer(learning_rate=1e-7,
     #                                      momentum=0.9).minimize(loss)
@@ -114,7 +113,7 @@ if __name__ == "__main__":
     train_list = get_train_list()
     print(len(train_list.keys()))
 
-    image_path = '/home/zmluo/Project/Face Detection/WiderFace'
+    image_path = '../WiderFace'
 
     saver = tf.train.Saver()
 
@@ -125,30 +124,42 @@ if __name__ == "__main__":
             path = os.path.join(image_path, img_name)
             im = cv2.imread(path)
 
-            foreground = np.zeros((im.shape[0], im.shape[1]), np.float32)
+            ratio = 1024. / np.maximum(im.shape[0], im.shape[1])
+            nw = int(im.shape[1] * ratio)
+            nh = int(im.shape[0] * ratio)
+
+            im = cv2.resize(im, (nw, nh), interpolation=cv2.INTER_NEAREST)
+            foreground = np.zeros((nh, nw), np.float32)
+            bbox = np.zeros((nh, nw, 4), np.float32)
 
             for bbox in bboxes:
+                bbox = bbox * ratio
+
                 x1, y1, w, h = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+
                 x1 = np.maximum(x1, 0)
                 y1 = np.maximum(y1, 0)
-                x2 = np.minimum(x1+w, im.shape[1])
-                y2 = np.minimum(y1+h, im.shape[0])
+                x2 = np.minimum(x1+w, nw)
+                y2 = np.minimum(y1+h, nh)
 
                 foreground[y1:y2, x1:x2] = 1.
 
-            ratio = 1024. / np.maximum(im.shape[0], im.shape[1])
-            w = int(im.shape[1] * ratio)
-            h = int(im.shape[0] * ratio)
+                for yy in range(y1, y2):
+                    bbox[yy, x1:x2, 0] = yy - y1
+                    bbox[yy, x1:x2, 1] = y2 - yy
 
-            im = cv2.resize(im, (w, h), interpolation=cv2.INTER_NEAREST)
-            foreground = cv2.resize(foreground, (w, h), interpolation=cv2.INTER_NEAREST)
+                for xx in range(x1, x2):
+                    bbox[y1:y2, xx] = xx - x1
+                    bbox[y1:y2, xx] = x2 - xx
 
             im = np.expand_dims(im, axis=0)
             foreground = np.expand_dims(foreground, axis=0)
             foreground = np.expand_dims(foreground, axis=3)
+            bbox = np.expand_dims(bbox, axis=0)
 
             _, loss_val = sess.run([train_op, loss], feed_dict={x: im,
-                                                                sc_: foreground})
+                                                                sc_: foreground,
+                                                                bbox_: bbox})
 
             # tl.files.save_npz(model['bbox'].all_params, name='model.npz')
 
