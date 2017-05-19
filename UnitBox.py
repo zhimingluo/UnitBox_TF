@@ -57,7 +57,7 @@ def Model(net_in):
 
     model = {}
     model['score'] = score.outputs
-    model['prob'] = prob.outputs
+    model['prob'] = prob
     model['bbox'] = bbox.outputs
 
     return model
@@ -84,7 +84,7 @@ def loss_function(sc_pred, sc_true, bbox_pred, bbox_true):
     for w in tl.layers.get_variables_with_name('W_deconv2d', train_only=True, printable=False):
         l2 += tf.contrib.layers.l2_regularizer(0.0005)(w)
 
-    return score_loss + bbox_loss + l2
+    return 0.01*score_loss + bbox_loss + l2
 
 
 if __name__ == "__main__":
@@ -129,11 +129,11 @@ if __name__ == "__main__":
             nh = int(im.shape[0] * ratio)
 
             im = cv2.resize(im, (nw, nh), interpolation=cv2.INTER_NEAREST)
-            foreground = np.zeros((nh, nw), np.float32)
-            bbox = np.zeros((nh, nw, 4), np.float32)
+            l_score = np.zeros((nh, nw), np.float32)
+            l_bbox = np.zeros((nh, nw, 4), np.float32)
 
             for bbox in bboxes:
-                bbox = bbox * ratio
+                bbox = np.array(bbox) * ratio
 
                 x1, y1, w, h = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
 
@@ -142,24 +142,24 @@ if __name__ == "__main__":
                 x2 = np.minimum(x1+w, nw)
                 y2 = np.minimum(y1+h, nh)
 
-                foreground[y1:y2, x1:x2] = 1.
+                l_score[y1:y2, x1:x2] = 1.
 
                 for yy in range(y1, y2):
-                    bbox[yy, x1:x2, 0] = yy - y1
-                    bbox[yy, x1:x2, 1] = y2 - yy
+                    l_bbox[yy, x1:x2, 0] = yy - y1
+                    l_bbox[yy, x1:x2, 1] = y2 - yy
 
                 for xx in range(x1, x2):
-                    bbox[y1:y2, xx] = xx - x1
-                    bbox[y1:y2, xx] = x2 - xx
+                    l_bbox[y1:y2, xx] = xx - x1
+                    l_bbox[y1:y2, xx] = x2 - xx
 
             im = np.expand_dims(im, axis=0)
-            foreground = np.expand_dims(foreground, axis=0)
-            foreground = np.expand_dims(foreground, axis=3)
-            bbox = np.expand_dims(bbox, axis=0)
+            l_score = np.expand_dims(l_score, axis=0)
+            l_score = np.expand_dims(l_score, axis=3)
+            l_bbox = np.expand_dims(l_bbox, axis=0)
 
             _, loss_val = sess.run([train_op, loss], feed_dict={x: im,
-                                                                sc_: foreground,
-                                                                bbox_: bbox})
+                                                                sc_: l_score,
+                                                                bbox_: l_bbox})
 
             # tl.files.save_npz(model['bbox'].all_params, name='model.npz')
 
