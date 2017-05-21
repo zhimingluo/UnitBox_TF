@@ -117,7 +117,7 @@ if __name__ == "__main__":
 
     saver = tf.train.Saver()
 
-    for epoch in range(10):
+    for epoch in range(20):
         total_loss = 0.
         count = 0
         for img_name, bboxes in train_list.items():
@@ -149,13 +149,15 @@ if __name__ == "__main__":
                     l_bbox[yy, x1:x2, 1] = y2 - yy
 
                 for xx in range(x1, x2):
-                    l_bbox[y1:y2, xx] = xx - x1
-                    l_bbox[y1:y2, xx] = x2 - xx
+                    l_bbox[y1:y2, xx, 2] = xx - x1
+                    l_bbox[y1:y2, xx, 3] = x2 - xx
 
             im = np.expand_dims(im, axis=0)
             l_score = np.expand_dims(l_score, axis=0)
             l_score = np.expand_dims(l_score, axis=3)
             l_bbox = np.expand_dims(l_bbox, axis=0)
+
+            l_bbox /= 256.
 
             _, loss_val = sess.run([train_op, loss], feed_dict={x: im,
                                                                 sc_: l_score,
