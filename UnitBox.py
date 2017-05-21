@@ -157,7 +157,7 @@ if __name__ == "__main__":
             l_score = np.expand_dims(l_score, axis=3)
             l_bbox = np.expand_dims(l_bbox, axis=0)
 
-            l_bbox /= 256.
+            l_bbox /= 64.
 
             _, loss_val = sess.run([train_op, loss], feed_dict={x: im,
                                                                 sc_: l_score,
@@ -169,7 +169,7 @@ if __name__ == "__main__":
             count += 1
 
             if count % 20 == 0:
-                print("Average Loss [%d] : %f" % (count, total_loss / count))
+                print("Epoches [%d] average Loss [%d] : %f" % (epoch, count, total_loss / count))
 
         saver.save(sess, 'model/model_f.ckpt', global_step=epoch)
 

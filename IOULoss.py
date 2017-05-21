@@ -32,4 +32,4 @@ def IOULoss(input, label):
                  tf.zeros_like(xt, tf.float32),
                  -tf.log(IoU + _EPSILON))
 
-    return tf.reduce_sum(L)
+    return tf.reduce_mean(L)
