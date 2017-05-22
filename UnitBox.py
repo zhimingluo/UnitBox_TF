@@ -169,7 +169,7 @@ if __name__ == "__main__":
             count += 1
 
             if count % 20 == 0:
-                print("Epoches [%d] average Loss [%d] : %f" % (epoch, count, total_loss / count))
+                print("Epoch [%d] average Loss [%d] : %f" % (epoch, count, total_loss / count))
 
         saver.save(sess, 'model/model_f.ckpt', global_step=epoch)
 

@@ -26,7 +26,7 @@ def IOULoss(input, label):
     I = tf.multiply(Ih, Iw, name="intersection")
     U = X + G - I + _EPSILON
 
-    IoU = tf.divide(I, U)
+    IoU = tf.divide(I, U, name='IoU')
 
     L = tf.where(tf.less_equal(gt, tf.constant(0.01, dtype=tf.float32)),
                  tf.zeros_like(xt, tf.float32),
